@@ -1,4 +1,4 @@
-# Task API — SQLite Edition
+# Task API - SQLite Edition
 
 A CRUD REST API for tasks, built with FastAPI and SQLite. This is the database-backed version of the Week 2 Assignment 1 API. The endpoints are identical; only the storage layer changed.
 
