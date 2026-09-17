@@ -101,4 +101,4 @@ The API surface is identical. The only change is the storage layer:
 
 ## Screenshot
 
-Add a screenshot of DB Browser for SQLite showing the tasks table here before submitting.
+![DB Browser showing tasks table](image.png)
