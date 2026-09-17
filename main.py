@@ -207,3 +207,26 @@ def delete_task(task_id: int):
         conn.commit()
 
     return {"message": f"Task {task_id} deleted"}
+
+
+# ---------------------------------------------------------------------------
+# Stats endpoint (optional extra)
+# ---------------------------------------------------------------------------
+
+@app.get(
+    "/stats",
+    summary="Task statistics",
+    description="Returns total, completed, and pending task counts using SQL COUNT().",
+)
+def get_stats():
+    with get_connection() as conn:
+        total = conn.execute("SELECT COUNT(*) FROM tasks").fetchone()[0]
+        completed = conn.execute(
+            "SELECT COUNT(*) FROM tasks WHERE done = 1"
+        ).fetchone()[0]
+
+    return {
+        "total": total,
+        "completed": completed,
+        "pending": total - completed,
+    }
