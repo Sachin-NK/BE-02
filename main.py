@@ -1,5 +1,6 @@
 import sqlite3
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
+from typing import Optional
 
 # ---------------------------------------------------------------------------
 # Database setup
@@ -48,3 +49,61 @@ app = FastAPI(
 )
 
 init_db()
+
+
+# ---------------------------------------------------------------------------
+# Helper
+# ---------------------------------------------------------------------------
+
+def row_to_dict(row: sqlite3.Row) -> dict:
+    return {
+        "id": row["id"],
+        "title": row["title"],
+        "done": bool(row["done"]),
+    }
+
+
+# ---------------------------------------------------------------------------
+# Stage 1: Read endpoints
+# ---------------------------------------------------------------------------
+
+@app.get(
+    "/tasks",
+    summary="List all tasks",
+    description="Returns every task stored in the database.",
+)
+def list_tasks(search: Optional[str] = None, done: Optional[bool] = None):
+    query = "SELECT * FROM tasks WHERE 1=1"
+    params: list = []
+
+    if search is not None:
+        query += " AND title LIKE ?"
+        params.append(f"%{search}%")
+
+    if done is not None:
+        query += " AND done = ?"
+        params.append(int(done))
+
+    query += " ORDER BY id"
+
+    with get_connection() as conn:
+        rows = conn.execute(query, params).fetchall()
+
+    return [row_to_dict(r) for r in rows]
+
+
+@app.get(
+    "/tasks/{task_id}",
+    summary="Get a single task",
+    description="Returns the task with the given id. Returns 404 if not found.",
+)
+def get_task(task_id: int):
+    with get_connection() as conn:
+        row = conn.execute(
+            "SELECT * FROM tasks WHERE id = ?", (task_id,)
+        ).fetchone()
+
+    if row is None:
+        raise HTTPException(status_code=404, detail="Task not found")
+
+    return row_to_dict(row)
