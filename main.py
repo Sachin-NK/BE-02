@@ -1,5 +1,6 @@
 import sqlite3
 from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
 from typing import Optional
 
 # ---------------------------------------------------------------------------
@@ -49,6 +50,14 @@ app = FastAPI(
 )
 
 init_db()
+
+
+# ---------------------------------------------------------------------------
+# Pydantic models
+# ---------------------------------------------------------------------------
+
+class TaskCreate(BaseModel):
+    title: str
 
 
 # ---------------------------------------------------------------------------
@@ -105,5 +114,33 @@ def get_task(task_id: int):
 
     if row is None:
         raise HTTPException(status_code=404, detail="Task not found")
+
+    return row_to_dict(row)
+
+
+# ---------------------------------------------------------------------------
+# Stage 2: Create
+# ---------------------------------------------------------------------------
+
+@app.post(
+    "/tasks",
+    summary="Create a task",
+    description="Creates a new task. Returns 400 if title is blank. Returns 201 on success.",
+    status_code=201,
+)
+def create_task(body: TaskCreate):
+    if not body.title.strip():
+        raise HTTPException(status_code=400, detail="title is required and cannot be blank")
+
+    clean_title = body.title.strip()
+
+    with get_connection() as conn:
+        cursor = conn.execute(
+            "INSERT INTO tasks (title, done) VALUES (?, ?)",
+            (clean_title, 0),
+        )
+        conn.commit()
+        new_id = cursor.lastrowid
+        row = conn.execute("SELECT * FROM tasks WHERE id = ?", (new_id,)).fetchone()
 
     return row_to_dict(row)
